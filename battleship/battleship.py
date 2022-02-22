@@ -1,17 +1,17 @@
 from typing import Optional
 
 from player import Player
-from field import Field
+from ship import Ship
 
 
 class Battleship(object):
     turn: int
     players: [Player]
 
-    def __init__(self, field_height: int, field_width: int, name: str):
+    def __init__(self, field_length: int, field_width: int):
         self.turn = 0
-        self.players = [Player(name, Field(field_height, field_width)),
-                        Player("AI", Field(field_height, field_width))]
+        self.players = [Player(field_length, field_width, Ship.generate_ships(field_length, field_width)),
+                        Player(field_length, field_width, Ship.generate_ships(field_length, field_width))]
 
     @property
     def winner(self) -> Optional[Player]:
@@ -31,6 +31,6 @@ class Battleship(object):
         return self.players[1 - self.turn]
 
     def make_shot(self, x: int, y: int):
-        result = self.current_player.note_shot(x, y, *self.next_player.receive_shot(x, y))
-        if result == "missing":
+        result = self.current_player.mark_shot(x, y, *self.next_player.receive_shot(x, y))
+        if result == "miss":
             self.turn = 1 - self.turn

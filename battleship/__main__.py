@@ -1,21 +1,24 @@
 from curses import wrapper
-from string import ascii_letters
+import typer
+import random
 
-HUMAN_PLAYER_NAME = 'Human'
-COMPUTER_PLAYER_NAME = 'Machine'
+from battleship import Battleship
 
-def get_player_name(message):
-    """
-    Returns player name from user input.
-    The name must have 15 or less characters.
-    If no name is entered (empty string), then the name will just be 'Player [player_num]'.
-    """
-    input_message = f"{message}:  "
-    name = input(input_message)
-    # TODO мб убрать ограничение
-    while len(name) > 15:
-        name = input("Please enter a name with 15 or less characters:  ")
-    return name
+# HUMAN_PLAYER_NAME = 'Human'
+# COMPUTER_PLAYER_NAME = 'Machine'
+
+# def get_player_name(message):
+#     """
+#     Returns player name from user input.
+#     The name must have 15 or less characters.
+#     If no name is entered (empty string), then the name will just be 'Player [player_num]'.
+#     """
+#     input_message = f"{message}:  "
+#     name = input(input_message)
+#     # TODO мб убрать ограничение
+#     while len(name) > 15:
+#         name = input("Please enter a name with 15 or less characters:  ")
+#     return name
 
 
 def play(game, screen):
@@ -68,40 +71,56 @@ def play(game, screen):
         #     # Quit this game
         #     return
 
-def main(screen):
+def play(screen):
     # Clear screen
     screen.clear()
     # Initialize the game
-    game = Slapjack(PLAYER_NAME_0, PLAYER_NAME_1)
+    # game = Battleship()
+    #
+    # while True:
+    #     slapjack_str = '#####################################\n' \
+    #                  + '#        WELCOME TO SLAPJACK        #\n' \
+    #                  + '#####################################\n\n'
+    #     player_names_str = 'Player 1: {}\n'.format(PLAYER_NAME_0)   \
+    #                      + 'Player 2: {}\n'.format(PLAYER_NAME_1)
+    #     instructions_str = '\nPress p to play a new game.\nPress q to quit.'
+    #     # Set winner message if player 0 or player 1 won
+    #     winner_str = '{} is the winner!\n'.format(game.winner.name.strip()) if game.winner else ''
+    #
+    #     # Display instructions and winner message on screen
+    #     screen.clear()
+    #     screen.addstr(0, 0, slapjack_str + winner_str + instructions_str)
+    #
+    #     # Get user input
+    #     c = screen.getch()
+    #     if c == ord('q'):
+    #         # Quit the game
+    #         return
+    #     elif c == ord('p'):
+    #         # Play a new game
+    #         game = Slapjack(PLAYER_NAME_0, PLAYER_NAME_1)
+    #         play(game, screen)
 
+
+def main(field_length: int, field_width: int):
+    # wrapper(play)
+    game = Battleship(field_length, field_width)
     while True:
-        slapjack_str = '#####################################\n' \
-                     + '#        WELCOME TO SLAPJACK        #\n' \
-                     + '#####################################\n\n'
-        player_names_str = 'Player 1: {}\n'.format(PLAYER_NAME_0)   \
-                         + 'Player 2: {}\n'.format(PLAYER_NAME_1)
-        instructions_str = '\nPress p to play a new game.\nPress q to quit.'
-        # Set winner message if player 0 or player 1 won
-        winner_str = '{} is the winner!\n'.format(game.winner.name.strip()) if game.winner else ''
-
-        # Display instructions and winner message on screen
-        screen.clear()
-        screen.addstr(0, 0, slapjack_str + winner_str + instructions_str)
-
-        # Get user input
-        c = screen.getch()
-        if c == ord('q'):
-            # Quit the game
+        if game.winner:
+            print(str(game.turn) + " wins!")
             return
-        elif c == ord('p'):
-            # Play a new game
-            game = Slapjack(PLAYER_NAME_0, PLAYER_NAME_1)
-            play(game, screen)
+        if game.turn == 0:
+            print(game.players[0].display_str(0))
+            x, y = map(int, input("Inter target:  ").split())
+            game.make_shot(x - 1, y - 1)
+        else:
+            x, y = random.randint(0, field_length - 1), random.randint(0, field_width - 1)
+            game.make_shot(x, y)
 
 
 if __name__ == "__main__":
-    print("Playing a game of Slapjack...")
+    typer.run(main)
+    # print("Playing a game of Battleship...")
     # Ask for user to input names
-    PLAYER_NAME_0 = get_player_name(1) or 'Player 1' # 'Player 1' is represented as Player 0 internally
-    PLAYER_NAME_1 = get_player_name(2) or 'Player 2' # 'Player 2' is represented as Player 1 internally
-    wrapper(main)
+    # PLAYER_NAME_0 = get_player_name(1) or 'Player 1' # 'Player 1' is represented as Player 0 internally
+    # PLAYER_NAME_1 = get_player_name(2) or 'Player 2' # 'Player 2' is represented as Player 1 internally

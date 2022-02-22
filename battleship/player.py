@@ -1,41 +1,59 @@
 from typing import Optional
+import itertools
 
 from ship import Ship
-from field import Field
+from table import Table
 
 
 class Player(object):
-    name: str
     ships_count: int
-    field: Field
+    field_length: int
+    field_width: int
+    map: Table
+    radar: Table
+    ship_matrix: [[Optional[Ship]]]
 
-    def __init__(self, name: str, field: Field):
-        self.name = name
-        self.ships_count = 0
-        self.field = field
+    def __init__(self, field_length: int, field_width: int, ships: [Ship]):
+        self.ships_count = len(ships)
 
-    def note_shot(self, x: int, y: int, hit: bool, target_ship: Optional[Ship]) -> str:
+        self.field_length = field_length
+        self.field_width = field_width
+        self.map = Table(field_length, field_width)
+        self.radar = Table(field_length, field_width)
+
+        self.ships_matrix = [[None for _ in range(field_width)] for _ in range(field_length)]
+        for ship in ships:
+            for x, y in ship.occupied_cells:
+                self.ships_matrix[x][y] = ship
+                self.map.set(x, y, '□')
+
+    def mark_shot(self, x: int, y: int, hit: bool, target_ship: Optional[Ship]) -> str:
         if not hit:
-            self.field.radar[x][y] = 1
+            self.radar.set(x, y, 'O')
             return "miss"
         else:
-            self.field.radar[x][y] = 2
+            self.radar.set(x, y, 'X')
             if target_ship is None:
                 return "hit"
             else:
-                for (x, y) in target_ship.occupied_and_nearby_cells:
-                    if self.field.point_on_field(x, y) and self.field.radar[x][y] == 0:
-                        self.field.radar[x][y] = 1
-                return "killed"
+                for x, y in target_ship.occupied_and_nearby_cells:
+                    if 0 <= x < self.field_length and 0 <= y < self.field_width and self.radar.is_empty(x, y):
+                        self.radar.set(x, y, 'O')
+                return "killing"
 
     def receive_shot(self, x: int, y: int) -> (bool, Optional[Ship]):
-        cell = self.field.map[x][y]
-        if cell.is_empty():
+        ship = self.ships_matrix[x][y]
+        if ship is None:
+            self.map.set(x, y, 'O')
             return False, None
         else:
-            target_ship = cell.ship
-            cell.ship = None
-            target_ship.receive_shot()
-            if target_ship.is_destroyed():
+            self.map.set(x, y, 'X')
+            self.ships_matrix[x][y] = None
+            ship.receive_shot()
+            if ship.is_destroyed():
                 self.ships_count -= 1
-            return True, target_ship if target_ship.is_destroyed() else None
+            return True, ship if ship.is_destroyed() else None
+
+    def display_str(self, screen_width) -> str:  # TODO
+        tmp1 = map(lambda r1, r2: r1 + "    " + r2, self.map.draw_rows(), self.radar.draw_rows())
+        return "\n".join(tmp1)
