@@ -16,7 +16,7 @@ class Table(object):
 
     def __init__(self, length: int, width: int):
         if not MIN_LENGTH <= length <= MAX_LENGTH:
-            raise ValueError(f"Field height must be in range [{MIN_LENGTH}; {MAX_LENGTH}], "
+            raise ValueError(f"Field length must be in range [{MIN_LENGTH}; {MAX_LENGTH}], "
                              f"actually: {length}")
         if not MIN_WIDTH <= width <= MAX_WIDTH:
             raise ValueError(f"Field width must be in range [{MIN_WIDTH}; {MAX_WIDTH}], "
@@ -37,7 +37,7 @@ class Table(object):
         padding = "  " if self.width < 10 else "   "
         num_len = 1 if self.width < 10 else 2
         result = [padding + ascii_uppercase[:self.length]]
-        for i in range(1, self.width + 1):
-            result.append(str(i).rjust(num_len) + " " + "".join(col[i - 1] for col in self.content))
+        for i in range(0, self.width):
+            result.append(str(i + 1).rjust(num_len) + " " + "".join(col[i] for col in self.content))
         return result
 
