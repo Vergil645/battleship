@@ -25,12 +25,12 @@ def parse_point(s: str) -> Tuple[int, int]:
     :param s: user input
     :return: coordinates greater 0 on success or (-1, -1) on failure
     """
-    if re.match(r"[a-zA-Z]\d", s):
+    if len(s) == 2 and re.match(r"[a-zA-Z]\d", s):
         # s has form like 'a5' or 'B0'
         x = ascii_lowercase.index(s[0].lower())
         y = int(s[1]) - 1
         return x, y
-    elif re.match(r"[a-zA-Z]\d{2}", s):
+    elif len(s) == 3 and re.match(r"[a-zA-Z]\d{2}", s):
         # # s has form like 'a25' or 'B99'
         x = ascii_lowercase.index(s[0].lower())
         y = int(s[1]) * 10 + int(s[2]) - 1

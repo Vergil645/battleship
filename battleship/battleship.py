@@ -34,15 +34,9 @@ class Battleship(object):
     @property
     def winner(self) -> Optional[int]:
         """
-        :return: number of winning player or -1 if draw or None if game is not over yet
+        :return: number of winning player or None if game is not over yet
         """
-        if self.turn != 0:
-            # Round is not over
-            return None
-        elif self.players[0].ships_count == 0 and self.players[1].ships_count == 0:
-            # Draw
-            return -1
-        elif self.players[0].ships_count == 0:
+        if self.players[0].ships_count == 0:
             # Player 1 wins
             return 1
         elif self.players[1].ships_count == 0:
@@ -80,12 +74,7 @@ class Battleship(object):
         """
         # Check if game is over
         if self.winner is not None:
-            if self.winner == -1:
-                self.messages[0] = "Draw."
-                self.messages[1] = "Draw."
-            else:
-                self.messages[self.winner] = "You win!"
-                self.messages[1 - self.winner] = "You lose!"
+            # Do nothing
             return
         if not 0 <= x < self.field_length or not 0 <= y < self.field_width:
             # Said that coordinates is incorrect
@@ -96,17 +85,17 @@ class Battleship(object):
         # Process result of shot and create appropriate messages
         if result == ShotResult.water:
             self.messages[self.turn] = "You missed."
-            self.messages[1 - self.turn] = "Enemy missed. Shoot now!"
             self.turn = 1 - self.turn
             return
         if result == ShotResult.hit:
             self.messages[self.turn] = "You hit. Shoot again!"
-            self.messages[1 - self.turn] = "Enemy hit!"
         elif result == ShotResult.killing:
             self.messages[self.turn] = "You destroyed enemy ship. Shoot again!"
-            self.messages[1 - self.turn] = "Enemy destroyed your ship!"
         else:
             assert False, f"Unhandled ShotResult: {result}"
+        if self.next_player.ships_count == 0:
+            self.messages[self.turn] = "You win!"
+            self.messages[1 - self.turn] = "You lose!"
 
     @property
     def field_height(self) -> int:

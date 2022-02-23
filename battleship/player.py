@@ -71,8 +71,9 @@ class Player(object):
         """
         ship = self.ships_matrix[x][y]
         if ship is None:
-            # Mark a miss on map
-            self.field.map.set_water(x, y)
+            if self.field.map.is_empty(x, y):
+                # Mark a miss on map
+                self.field.map.set_water(x, y)
             return ShotResult.water, None
         else:
             # Mark a hit on map

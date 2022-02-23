@@ -8,7 +8,7 @@ Before play begins, each player secretly arranges their ships on their primary g
 
 After the ships have been positioned, the game proceeds in a series of rounds. In each round, each player takes a turn to announce a target square in the opponent's grid which is to be shot at. The opponent announces whether the square is occupied by a ship. If it is a "hit", the player who is hit marks this on their own or "ocean" grid. The attacking player marks the hit or miss on their own "tracking" or "target" grid, in order to build up a picture of the opponent's fleet.
 
-When all the squares of a ship have been hit, the ship's owner announces the sinking of it. If all of a player's ships have been sunk, the game is over and their opponent wins. If all ships of both players are sunk by the end of the round, the game is a draw.
+When all the squares of a ship have been hit, the ship's owner announces the sinking of it. If all of a player's ships have been sunk, the game is over and their opponent wins.
 
 ##### Requirements
 You must have Python 3.8+ to run the game.
