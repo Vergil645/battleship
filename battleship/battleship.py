@@ -1,72 +1,140 @@
 from typing import Optional
 
-from player import Player
+from player import Player, ShotResult
+from field import Field
 from ship import Ship
+
+MESSAGE_HEIGHT = 1
+LEGEND_MENU_HEIGHT = 5
 
 
 class Battleship(object):
-    turn: int
-    players: [Player]
+    """
+    Describes session of battleship game
+    """
+    turn: int  # number of current player
+    host: int  # number of player how plays on this machine
+    players: [Player]  # list of players
+    messages: [str]  # list of messages for players
     field_length: int
     field_width: int
-    message: str
 
-    def __init__(self, field_length: int, field_width: int):
+    def __init__(self, field_length: int, field_width: int, host: int = 0):
         self.turn = 0
-        self.players = [Player(field_length, field_width, Ship.generate_ships(field_length, field_width)),
-                        Player(field_length, field_width, Ship.generate_ships(field_length, field_width))]
+        self.host = host
+        player_field_0 = Field(field_length, field_width)
+        player_field_1 = Field(field_length, field_width)
+        # Create Player objects with empty fields and randomly generated ships
+        self.players = [Player(player_field_0, Ship.generate_ships(player_field_0)),
+                        Player(player_field_1, Ship.generate_ships(player_field_1))]
+        self.messages = ["", ""]
         self.field_length = field_length
         self.field_width = field_width
-        self.message = ""
 
     @property
     def winner(self) -> Optional[int]:
-        if self.players[0].ships_count == 0:
+        """
+        :return: number of winning player or -1 if draw or None if game is not over yet
+        """
+        if self.turn != 0:
+            # Round is not over
+            return None
+        elif self.players[0].ships_count == 0 and self.players[1].ships_count == 0:
+            # Draw
+            return -1
+        elif self.players[0].ships_count == 0:
+            # Player 1 wins
             return 1
         elif self.players[1].ships_count == 0:
+            # Player 0 wins
             return 0
         else:
             return None
 
     @property
-    def current_player(self):
+    def current_player(self) -> Player:
+        """
+        :return: current player object
+        """
         return self.players[self.turn]
 
     @property
-    def next_player(self):
+    def next_player(self) -> Player:
+        """
+        :return: next player object
+        """
         return self.players[1 - self.turn]
 
+    @property
+    def host_player(self) -> Player:
+        """
+        :return: host player object
+        """
+        return self.players[self.host]
+
     def make_shot(self, x: int, y: int):
+        """
+        Make turn between players or doing anything if game is already over
+        :param x: x-coordinate of target point on enemy field
+        :param y: y-coordinate of target point on enemy field
+        """
+        # Check if game is over
+        if self.winner is not None:
+            if self.winner == -1:
+                self.messages[0] = "Draw."
+                self.messages[1] = "Draw."
+            else:
+                self.messages[self.winner] = "You win!"
+                self.messages[1 - self.winner] = "You lose!"
+            return
+        if not 0 <= x < self.field_length or not 0 <= y < self.field_width:
+            # Said that coordinates is incorrect
+            self.messages[self.turn] = "Point is not on field. Try again."
+            return
+        # Make shot
         result = self.current_player.mark_shot(x, y, *self.next_player.receive_shot(x, y))
-        if result == "miss":
-            self.message = "Miss!"
+        # Process result of shot and create appropriate messages
+        if result == ShotResult.water:
+            self.messages[self.turn] = "You missed."
+            self.messages[1 - self.turn] = "Enemy missed. Shoot now!"
             self.turn = 1 - self.turn
-        elif result == "hit":
-            self.message = "Hit! Make additional turn!"
+            return
+        if result == ShotResult.hit:
+            self.messages[self.turn] = "You hit. Shoot again!"
+            self.messages[1 - self.turn] = "Enemy hit!"
+        elif result == ShotResult.killing:
+            self.messages[self.turn] = "You destroyed enemy ship. Shoot again!"
+            self.messages[1 - self.turn] = "Enemy destroyed your ship!"
         else:
-            self.message = "Killing! Make additional turn!"
+            assert False, f"Unhandled ShotResult: {result}"
 
     @property
     def field_height(self) -> int:
+        """
+        :return: height of field on screen
+        """
         return self.field_width + 1
 
-    def display_player_field(self, screen_width: int) -> str:
-        return self.players[0].display_field(screen_width)
+    def display_host_field(self, screen_width: int) -> str:
+        """
+        :param screen_width: width of screen where field will be displayed
+        :return: representation of the host player field
+        """
+        return self.host_player.field.display(screen_width)
 
-    @property
-    def message_height(self) -> int:
-        return 1 if self.message else 0
-
-    def display_message(self, screen_width: int) -> str:
-        padding = ' ' * max(0, (screen_width - len(self.message)) // 2)
-        result = padding + self.message + '\n' if self.message else ""
-        self.message = ""
+    def display_host_message(self, screen_width: int) -> str:
+        """
+        :param screen_width: width of screen where message will be displayed
+        :return: representation of the host player message
+        """
+        message = self.messages[self.host]
+        padding = ' ' * max(0, (screen_width - len(message)) // 2)
+        result = padding + message + '\n' if message else ""
         return result
 
-    @property
-    def menu_height(self) -> int:
-        return 5
-
-    def display_menu(self, screen_width: int) -> str:
-        padding = ' ' * max(0, (screen_width - 14) // 2)
-        return padding + ('\n' + padding).join(self.players[0].menu)
+    def display_host_legend_menu(self, screen_width: int) -> str:
+        """
+        :param screen_width: width of screen where legend and menu will be displayed
+        :return: representation of the legend and the host player menu
+        """
+        return self.host_player.display_legend_menu(screen_width)

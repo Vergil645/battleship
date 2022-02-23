@@ -1,78 +1,108 @@
-from typing import Optional
+from typing import Optional, Tuple
+from enum import Enum
 
 from ship import Ship
-from table import Table
+from field import LEGEND_WIDTH, Field
+
+MENU_WIDTH = 14
+
+
+class ShotResult(Enum):
+    water = 0
+    hit = 1
+    killing = 2
 
 
 class Player(object):
-    field_length: int
-    field_width: int
+    """
+    Describes battleship player
+    """
+    field: Field  # field with map and radar
+    ships_count: int  # count of alive ships
+    ship_matrix: [[Optional[Ship]]]  # ship layout matrix
+    shots: int  # count of made shots
+    hits: int  # count of hits
 
-    map: Table
-    radar: Table
-
-    ships_count: int
-    ship_matrix: [[Optional[Ship]]]
-
-    shots: int
-    hits: int
-
-    def __init__(self, field_length: int, field_width: int, ships: [Ship]):
-        self.field_length = field_length
-        self.field_width = field_width
-
-        self.map = Table(field_length, field_width)
-        self.radar = Table(field_length, field_width)
-
+    def __init__(self, field: Field, ships: [Ship]):
+        self.field = field
         self.ships_count = len(ships)
-        self.ships_matrix = [[None for _ in range(field_width)] for _ in range(field_length)]
+        # Initialize ships_matrix
+        self.ships_matrix = [[None for _ in range(field.width)] for _ in range(field.length)]
         for ship in ships:
             for x, y in ship.occupied_cells:
+                # Cell (x, y) contains a ship
                 self.ships_matrix[x][y] = ship
-                self.map.set(x, y, '□')
-
+                self.field.map.set_ship(x, y)
         self.shots = 0
         self.hits = 0
 
-    def mark_shot(self, x: int, y: int, hit: bool, target_ship: Optional[Ship]) -> str:
+    def mark_shot(self, x: int, y: int, result: ShotResult, target_ship: Optional[Ship]) -> ShotResult:
+        """
+        Process a shot, which was made by this player
+        :param x: x-coordinate of target point on enemy field
+        :param y: y-coordinate of target point on enemy field
+        :param result: result of the shot
+        :param target_ship: killed enemy ship or None if no ship was destroyed
+        :return: result of the shot
+        """
         self.shots += 1
-        if not hit:
-            if self.radar.is_empty(x, y):
-                self.radar.set(x, y, 'O')
-            return "miss"
+        if result == ShotResult.water:
+            if self.field.radar.is_empty(x, y):
+                # Mark a miss shot on radar
+                self.field.radar.set_water(x, y)
         else:
-            self.radar.set(x, y, 'X')
+            # Mark a hit on radar
+            self.field.radar.set_hit(x, y)
             self.hits += 1
-            if target_ship is None:
-                return "hit"
-            else:
+            if result == ShotResult.killing:
+                assert target_ship is not None
                 for x, y in target_ship.occupied_and_nearby_cells:
-                    if 0 <= x < self.field_length and 0 <= y < self.field_width and self.radar.is_empty(x, y):
-                        self.radar.set(x, y, 'O')
-                return "killing"
+                    # Mark cells around destroyed ships on radar
+                    if self.field.on_field(x, y) and self.field.radar.is_empty(x, y):
+                        self.field.radar.set_water(x, y)
+        return result
 
-    def receive_shot(self, x: int, y: int) -> (bool, Optional[Ship]):
+    def receive_shot(self, x: int, y: int) -> Tuple[ShotResult, Optional[Ship]]:
+        """
+        Process a shot, which was made by enemy player
+        :param x: x-coordinate of target point on self field
+        :param y: y-coordinate of target point on self field
+        :return: result of the shot and killed ship or None if no ship was destroyed
+        """
         ship = self.ships_matrix[x][y]
         if ship is None:
-            self.map.set(x, y, 'O')
-            return False, None
+            # Mark a miss on map
+            self.field.map.set_water(x, y)
+            return ShotResult.water, None
         else:
-            self.map.set(x, y, 'X')
+            # Mark a hit on map
+            self.field.map.set_hit(x, y)
             self.ships_matrix[x][y] = None
             ship.receive_shot()
             if ship.is_destroyed():
+                # Ship is destroyed
                 self.ships_count -= 1
-            return True, ship if ship.is_destroyed() else None
-
-    def display_field(self, screen_width) -> str:
-        rows = list(map(lambda r1, r2: r1 + ' ' * 4 + r2, self.map.draw_rows(), self.radar.draw_rows()))
-        padding = ' ' * max(0, (screen_width - len(rows[0])) // 2)
-        return padding + ('\n' + padding).join(rows)
+                return ShotResult.killing, ship
+            else:
+                # Ship is not destroyed
+                return ShotResult.hit, None
 
     @property
     def menu(self) -> [str]:
+        """
+        :return: representation of menu with counts of shots, hits and misses
+        """
         return [f"+------------+",
                 f"| shots: {str(self.shots).rjust(3)} |",
                 f"|  hits: {str(self.hits).rjust(3)} |",
                 f"| water: {str(self.shots - self.hits).rjust(3)} |",
                 f"+------------+"]
+
+    def display_legend_menu(self, screen_width: int) -> str:
+        """
+        :param screen_width: width of screen where legend and menu will be displayed
+        :return: representation of the legend and the player menu
+        """
+        rows = list(map(lambda r1, r2: r1 + ' ' * 6 + r2, Field.legend(), self.menu))
+        padding = ' ' * max(0, (screen_width - LEGEND_WIDTH - MENU_WIDTH - 6) // 2)
+        return padding + ('\n' + padding).join(rows)
