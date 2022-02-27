@@ -16,7 +16,7 @@ You must have Python 3.8+ to run the game.
 ##### Run the Game
 Navigate to the directory in your console and then run:
 ```sh
-$ python battleship --field-length <length value> --field-width <width value>
+$ python battleship [--field-length <length value>] [--field-width <width value>]
 ```
 
 ##### Keyboard Commands
@@ -34,7 +34,3 @@ The `__main__.py` class is separate from the above classes, and takes care of us
 ##### External Python Libraries Used
 * `curses`
 * `typer`
-* `os`
-* `enum`
-* `typing`
-* `random`

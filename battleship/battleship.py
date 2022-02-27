@@ -1,11 +1,12 @@
-from typing import Optional
+from typing import Optional, List
 
-from player import Player, ShotResult
-from field import Field
+from player import MENU_HEIGHT, MENU_WIDTH, Player, ShotResult
+from field import LEGEND_HEIGHT, LEGEND_WIDTH, Field
 from ship import Ship
 
 MESSAGE_HEIGHT = 1
-LEGEND_MENU_HEIGHT = 5
+LEGEND_MENU_HEIGHT = max(LEGEND_HEIGHT, MENU_HEIGHT)
+LEGEND_MENU_WIDTH = LEGEND_WIDTH + MENU_WIDTH + 6
 
 
 class Battleship(object):
@@ -14,8 +15,8 @@ class Battleship(object):
     """
     turn: int  # number of current player
     host: int  # number of player how plays on this machine
-    players: [Player]  # list of players
-    messages: [str]  # list of messages for players
+    players: List[Player]  # list of players
+    messages: List[str]  # list of messages for players
     field_length: int
     field_width: int
 
@@ -27,7 +28,7 @@ class Battleship(object):
         # Create Player objects with empty fields and randomly generated ships
         self.players = [Player(player_field_0, Ship.generate_ships(player_field_0)),
                         Player(player_field_1, Ship.generate_ships(player_field_1))]
-        self.messages = ["", ""]
+        self.messages = ['', '']
         self.field_length = field_length
         self.field_width = field_width
 
@@ -39,11 +40,10 @@ class Battleship(object):
         if self.players[0].ships_count == 0:
             # Player 1 wins
             return 1
-        elif self.players[1].ships_count == 0:
+        if self.players[1].ships_count == 0:
             # Player 0 wins
             return 0
-        else:
-            return None
+        return None
 
     @property
     def current_player(self) -> Player:
@@ -76,33 +76,48 @@ class Battleship(object):
         if self.winner is not None:
             # Do nothing
             return
-        if not 0 <= x < self.field_length or not 0 <= y < self.field_width:
+        if not self.current_player.check_point(x, y):
             # Said that coordinates is incorrect
-            self.messages[self.turn] = "Point is not on field. Try again."
+            self.messages[self.turn] = 'Point is not on field or is already discovered. Try again.'
             return
         # Make shot
         result = self.current_player.mark_shot(x, y, *self.next_player.receive_shot(x, y))
         # Process result of shot and create appropriate messages
         if result == ShotResult.water:
-            self.messages[self.turn] = "You missed."
+            self.messages[self.turn] = 'You missed.'
             self.turn = 1 - self.turn
             return
         if result == ShotResult.hit:
-            self.messages[self.turn] = "You hit. Shoot again!"
+            self.messages[self.turn] = 'You hit. Shoot again!'
         elif result == ShotResult.killing:
-            self.messages[self.turn] = "You destroyed enemy ship. Shoot again!"
+            self.messages[self.turn] = 'You destroyed enemy ship. Shoot again!'
         else:
-            assert False, f"Unhandled ShotResult: {result}"
+            assert False, f'Unhandled ShotResult: {result}'
         if self.next_player.ships_count == 0:
-            self.messages[self.turn] = "You win!"
-            self.messages[1 - self.turn] = "You lose!"
+            self.messages[self.turn] = 'You win!'
+            self.messages[1 - self.turn] = 'You lose!'
+            self.turn = self.host
 
     @property
-    def field_height(self) -> int:
+    def host_message_width(self) -> int:
         """
-        :return: height of field on screen
+        :return: host message width on screen
         """
-        return self.field_width + 1
+        return len(self.messages[self.host])
+
+    @property
+    def host_field_height(self) -> int:
+        """
+        :return: host field height on screen
+        """
+        return self.host_player.field.height_on_screen
+
+    @property
+    def width_on_screen(self) -> int:
+        """
+        :return: game width on display (field, message and legend with menu)
+        """
+        return max(self.host_player.field.width_on_screen, self.host_message_width, LEGEND_MENU_WIDTH)
 
     def display_host_field(self, screen_width: int) -> str:
         """

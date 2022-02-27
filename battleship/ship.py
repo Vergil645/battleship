@@ -1,4 +1,4 @@
-from typing import Set, Tuple
+from typing import Set, Tuple, List
 import random
 
 from field import Field
@@ -29,17 +29,16 @@ class Ship(object):
         if self.rotation == 0:
             # East
             return set((self.x + dx, self.y) for dx in range(self.size))
-        elif self.rotation == 1:
+        if self.rotation == 1:
             # South
             return set((self.x, self.y + dy) for dy in range(self.size))
-        elif self.rotation == 2:
+        if self.rotation == 2:
             # West
             return set((self.x - dx, self.y) for dx in range(self.size))
-        elif self.rotation == 3:
+        if self.rotation == 3:
             # North
             return set((self.x, self.y - dy) for dy in range(self.size))
-        else:
-            assert False, f"Invalid rotation: {self.rotation}"
+        assert False, f'Invalid rotation: {self.rotation}'
 
     @property
     def occupied_and_nearby_cells(self) -> Set[Tuple[int, int]]:
@@ -52,7 +51,7 @@ class Ship(object):
                    for dy in range(-1, 2))
 
     def receive_shot(self):
-        assert self.hp > 0, "Ship is already destroyed"
+        assert self.hp > 0, 'Ship is already destroyed'
         self.hp -= 1
 
     def is_destroyed(self) -> bool:
@@ -73,7 +72,7 @@ class Ship(object):
                        for ship in existed_ships)
 
     @staticmethod
-    def get_sizes(field: Field) -> [int]:
+    def get_sizes(field: Field) -> List[int]:
         """
         :param field: field where ships will be placed
         :return: list of ships sizes for this field
@@ -106,12 +105,11 @@ class Ship(object):
                     created = True
                     break
             if not created:
-                assert False, f"Cannot generate ships with sizes {sizes} " \
-                              f"on the field {field.length}x{field.width}"
+                assert False, f'Cannot generate ships with sizes {sizes} on the field {field.length}x{field.width}'
         return ships
 
     @staticmethod
-    def generate_positions(field: Field) -> [Tuple[int, int, int]]:
+    def generate_positions(field: Field) -> List[Tuple[int, int, int]]:
         """
         Generate all positions and rotations of ships in random order
         :param field: field where ships will be placed
